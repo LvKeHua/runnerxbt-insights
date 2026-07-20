@@ -647,9 +647,9 @@ document.querySelectorAll('.tf-btn').forEach(btn => {
 function fullUpdate() {
   updateStats();
   if (S.candleSeries) {
-    S.chart.timeScale().fitContent();
     updateChart();
     updateDensity();
+    S.chart.timeScale().fitContent();
   }
 }
 
@@ -701,8 +701,7 @@ function initChart() {
   document.getElementById('chartLoading').style.display = 'none';
 
   initDensityChart();
-  updateChart();
-  updateDensity();
+  fullUpdate();
 
   // ResizeObserver
   const ro = new ResizeObserver(() => {
