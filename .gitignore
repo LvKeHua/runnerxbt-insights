@@ -1,0 +1,11 @@
+﻿node_modules/
+data/
+frontend/
+backend/
+scraper/
+cf-worker/
+_chrome_profile/
+media/
+archive.html
+posts.json
+_session.json
