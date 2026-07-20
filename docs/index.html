@@ -289,11 +289,31 @@ body {
 @media (max-width: 900px) {
   .workspace { flex-direction:column; }
   .sidebar { width:100% !important; max-height:40vh; border-right:none; border-bottom:1px solid var(--border); }
-  .sidebar.collapsed { height:0; min-height:0; }
+  .sidebar.collapsed { height:0; min-height:0; overflow:hidden; }
+  .sidebar.collapsed .sidebar-head,
+  .sidebar.collapsed .sidebar-search,
+  .sidebar.collapsed .msg-list { display:none; }
   .stats-right .stat-badge { display:none; }
   .detail-panel.open { width:100% !important; }
   .chart-area { flex-direction:column; }
-  .stat-item.stat-change-hide { display:none; }
+  .stat-item .stat-change { font-size:11px; }
+  .stat-value { font-size:13px; }
+  .sidebar-toggle { width:32px; height:32px; font-size:16px; }
+  .symbol-btn { padding:6px 12px; font-size:11px; }
+  .msg-item { padding:8px 14px 8px 24px; min-height:36px; }
+  .detail-body { padding:12px; }
+}
+@media (max-width: 480px) {
+  .stats-right { gap:8px; }
+  .stat-item { gap:3px; }
+  .stat-label { display:none; }
+  .stat-value { font-size:12px; }
+  .stat-change { font-size:10px; }
+  .brand { font-size:12px; padding-right:8px; }
+  .stats-divider { margin:0 6px; }
+  .sidebar { max-height:35vh; }
+  .chart-header .title { font-size:12px; }
+  .detail-panel.open { width:100% !important; }
 }
 </style>
 </head>
