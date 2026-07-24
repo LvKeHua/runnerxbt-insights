@@ -1,18 +1,27 @@
-"""
-FastAPI backend serving RunnerXBT message data + BTC/ETH price data + local media
-"""
+﻿"""FastAPI backend serving RunnerXBT with real-time WebSocket support."""
+import asyncio
 import json
+import logging
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
+from datetime import datetime
+
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from datetime import datetime
 
-BASE_DIR = Path(__file__).parent.parent
-DATA_DIR = BASE_DIR / "data"
+from ws_hub import WebSocketHub
+from config import DATA_DIR, MEDIA_DIR
 
-app = FastAPI(title="RunnerXBT Insights", version="1.0")
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+# ── App Setup ──────────────────────────────────────────────────────
+app = FastAPI(title="RunnerXBT Insights", version="2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,16 +31,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve local media files (images/videos downloaded from Telegram)
-MEDIA_DIR = DATA_DIR / "media"
+# ── WebSocket Hub ──────────────────────────────────────────────────
+hub = WebSocketHub()
+
+# ── Telegram Listener (optional - only starts if session exists) ──
+listener = None
+
+
+@app.on_event("startup")
+async def startup():
+    """Start Telegram listener if session is available."""
+    global listener
+    session_path = Path(__file__).parent.parent / "scraper" / "tg_session"
+    if session_path.with_suffix(".session").exists():
+        try:
+            from telegram_listener import TelegramListener
+            listener = TelegramListener(on_message_callback=hub.broadcast)
+            asyncio.create_task(listener.start())
+            logger.info("Telegram listener started")
+        except Exception as e:
+            logger.warning("Failed to start Telegram listener: %s. Running without real-time updates.", e)
+    else:
+        logger.info("No Telegram session found. Running without real-time updates.")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Stop Telegram listener."""
+    if listener:
+        await listener.stop()
+        logger.info("Telegram listener stopped")
+
+
+# ── Serve Media ───────────────────────────────────────────────────
 MEDIA_DIR.mkdir(exist_ok=True)
 app.mount("/media", StaticFiles(directory=str(MEDIA_DIR)), name="media")
 
-def load_json(path):
+
+# ── Helper ────────────────────────────────────────────────────────
+def load_json(path: Path):
     if not path.exists():
         return None
     return json.loads(path.read_text(encoding="utf-8"))
 
+
+# ── REST API Endpoints ────────────────────────────────────────────
 @app.get("/api/messages")
 def get_messages():
     """Get all messages with dates and cleaned media paths."""
@@ -39,6 +83,7 @@ def get_messages():
     if data is None:
         raise HTTPException(404, "messages_final.json not found")
     return {"total": len(data), "data": data}
+
 
 @app.get("/api/daily")
 def get_daily():
@@ -48,6 +93,7 @@ def get_daily():
         raise HTTPException(404, "messages_daily_final.json not found")
     return {"total_days": len(data), "data": data}
 
+
 @app.get("/api/btc")
 def get_btc():
     """Get BTC 1D OHLCV data."""
@@ -55,6 +101,7 @@ def get_btc():
     if data is None:
         raise HTTPException(404, "btc_ohlcv_1d.json not found")
     return {"symbol": "BTC/USDT", "total": len(data), "data": data}
+
 
 @app.get("/api/btc4h")
 def get_btc4h():
@@ -64,6 +111,7 @@ def get_btc4h():
         raise HTTPException(404, "btc_ohlcv_4h.json not found")
     return {"symbol": "BTC/USDT", "total": len(data), "data": data}
 
+
 @app.get("/api/eth")
 def get_eth():
     """Get ETH 1D OHLCV data."""
@@ -71,6 +119,7 @@ def get_eth():
     if data is None:
         raise HTTPException(404, "eth_ohlcv_1d.json not found")
     return {"symbol": "ETH/USDT", "total": len(data), "data": data}
+
 
 @app.get("/api/status")
 def get_status():
@@ -80,7 +129,7 @@ def get_status():
     btc = load_json(DATA_DIR / "btc_ohlcv_1d.json")
     eth = load_json(DATA_DIR / "eth_ohlcv_1d.json")
     media_count = len(list(MEDIA_DIR.iterdir())) if MEDIA_DIR.exists() else 0
-    
+
     return {
         "messages": len(msgs) if msgs else 0,
         "days": len(daily) if daily else 0,
@@ -89,25 +138,56 @@ def get_status():
         "media_files": media_count,
         "project": "RunnerXBT Insights",
         "updated": datetime.now().isoformat(),
+        "ws_connections": hub.active_count,
     }
 
-# Serve frontend static files
-FRONTEND_DIR = BASE_DIR / "frontend"
-FRONTEND_DIR.mkdir(exist_ok=True)
+
+# ── WebSocket Endpoint ────────────────────────────────────────────
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time message push."""
+    await hub.connect(websocket)
+    try:
+        while True:
+            # Keep connection alive - client can send pings
+            data = await websocket.receive_text()
+            # Handle ping/pong
+            if data == "ping":
+                await websocket.send_text("pong")
+    except WebSocketDisconnect:
+        await hub.disconnect(websocket)
+    except Exception as e:
+        logger.warning("WebSocket error: %s", e)
+        await hub.disconnect(websocket)
+
+
+# ── Frontend Static Files ────────────────────────────────────────
+FRONTEND_DIR = DATA_DIR.parent / "frontend"
+
 
 @app.get("/")
-def serve_index():
+async def serve_index():
+    """Serve frontend SPA index.html."""
+    # Development: serve Vite dev server (handled by Vite proxy)
+    # Production: serve built frontend
+    dist_dir = FRONTEND_DIR / "dist"
+    if dist_dir.exists():
+        return FileResponse(str(dist_dir / "index.html"))
     index = FRONTEND_DIR / "index.html"
-    if not index.exists():
-        return {"error": "Frontend not built yet. Run build_frontend.py"}
-    return FileResponse(str(index))
+    if index.exists():
+        return FileResponse(str(index))
+    return {"message": "RunnerXBT API v2.0 running. Frontend not built yet."}
 
-@app.get("/{filename:path}")
-def serve_static(filename: str):
-    filepath = FRONTEND_DIR / filename
+
+@app.get("/assets/{path:path}")
+async def serve_assets(path: str):
+    """Serve frontend assets."""
+    dist_dir = FRONTEND_DIR / "dist"
+    filepath = dist_dir / "assets" / path
     if filepath.exists() and filepath.is_file():
         return FileResponse(str(filepath))
-    raise HTTPException(404, "Not found")
+    raise HTTPException(404, "Asset not found")
+
 
 if __name__ == "__main__":
     import uvicorn
