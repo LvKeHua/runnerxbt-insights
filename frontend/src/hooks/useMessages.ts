@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Message, MessagesResponse } from '../types';
 
 const API_BASE = '/api';
@@ -8,13 +8,12 @@ export function useMessages(wsMessage: Message | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load historical messages from REST API
   useEffect(() => {
     const fetchMessages = async () => {
       try {
         setLoading(true);
-        const res = await fetch(${API_BASE}/messages);
-        if (!res.ok) throw new Error(HTTP );
+        const res = await fetch(API_BASE + '/messages');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data: MessagesResponse = await res.json();
         setMessages(data.data || []);
         setError(null);
@@ -27,21 +26,18 @@ export function useMessages(wsMessage: Message | null) {
     fetchMessages();
   }, []);
 
-  // Merge real-time messages from WebSocket
   useEffect(() => {
     if (!wsMessage) return;
     setMessages((prev) => {
-      // Deduplicate by id
       if (prev.some((m) => m.id === wsMessage.id)) return prev;
-      // Add new message and re-sort (newest first)
       return [wsMessage, ...prev];
     });
   }, [wsMessage]);
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch(${API_BASE}/messages);
-      if (!res.ok) throw new Error(HTTP );
+      const res = await fetch(API_BASE + '/messages');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const data: MessagesResponse = await res.json();
       setMessages(data.data || []);
       setError(null);

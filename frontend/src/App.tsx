@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react';
+import './theme/global.css';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useMessages } from './hooks/useMessages';
-import { globalStyles } from './theme/GlobalStyles';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { StatsBar } from './components/StatsBar';
 import { Sidebar } from './components/Sidebar';
@@ -19,37 +19,31 @@ export default function App() {
     yellow: true,
     blue: true,
   });
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const filteredMessages = messages.filter((m) => filterLevels[m.level || 'blue']);
 
   return (
-    <>
-      <style>{globalStyles}</style>
-      <div style={{
-        display: 'flex', flexDirection: 'column', height: '100vh',
-        fontFamily: "'JetBrains Mono', 'Courier New', monospace",
-      }}>
-        <StatsBar messages={messages} loading={loading}>
-          <ConnectionStatus status={status} />
-        </StatsBar>
-        <FilterBar filterLevels={filterLevels} onChange={setFilterLevels} />
-        <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          <Sidebar
-            messages={filteredMessages}
-            collapsed={sidebarCollapsed}
-            onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-            onSelectMessage={setSelectedMessage}
-            selectedId={selectedMessage?.id}
-          />
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <ChartView messages={filteredMessages} onSelectMessage={setSelectedMessage} />
-          </div>
-          {selectedMessage && (
-            <MessageDetail message={selectedMessage} onClose={() => setSelectedMessage(null)} />
-          )}
+    <div style={{
+      display: 'flex', flexDirection: 'column', height: '100vh',
+      fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+    }}>
+      <StatsBar messages={messages} loading={loading}>
+        <ConnectionStatus status={status} />
+      </StatsBar>
+      <FilterBar filterLevels={filterLevels} onChange={setFilterLevels} />
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <Sidebar
+          messages={filteredMessages}
+          onSelectMessage={setSelectedMessage}
+          selectedId={selectedMessage?.id}
+        />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <ChartView messages={filteredMessages} />
         </div>
+        {selectedMessage && (
+          <MessageDetail message={selectedMessage} onClose={() => setSelectedMessage(null)} />
+        )}
       </div>
-    </>
+    </div>
   );
 }

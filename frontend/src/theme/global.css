@@ -1,0 +1,33 @@
+﻿:root {
+  --bg-base: #0c100e;
+  --bg-surface: #121a14;
+  --bg-elevated: #182218;
+  --bg-hover: #1c281e;
+  --border: #1e2a20;
+  --border-light: #162016;
+  --text-primary: #c8d8c8;
+  --text-secondary: #80a080;
+  --text-muted: #4a604a;
+  --accent-blue: #4d9fff;
+  --accent-green: #33cc66;
+  --accent-red: #e04040;
+  --accent-amber: #ffb000;
+  --level-red: #e04040;
+  --level-yellow: #ffb000;
+  --level-blue: #4d9fff;
+  --side-w: 300px;
+  --panel-w: 400px;
+  --bar-h: 36px;
+  --header-h: 36px;
+  --radius: 2px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { height: 100%; overflow: hidden; }
+body { font-family: 'JetBrains Mono', 'Courier New', monospace; background: var(--bg-base); color: var(--text-primary); }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+a { color: var(--accent-blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { cursor: pointer; font-family: inherit; }
