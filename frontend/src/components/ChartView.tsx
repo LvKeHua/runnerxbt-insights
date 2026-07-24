@@ -6,8 +6,8 @@ import { colors } from '../theme/colors';
 
 
 const API_MAP: Record<SymbolType, Record<TimeFrame, string>> = {
-  btc: { '1d': '/api/btc', '4h': '/api/btc4h' },
-  eth: { '1d': '/api/eth', '4h': '/api/eth' },
+  btc: { '1d': '/runnerxbt/api/btc', '4h': '/runnerxbt/api/btc4h' },
+  eth: { '1d': '/runnerxbt/api/eth', '4h': '/api/eth' },
 };
 
 const SYMBOL_LABEL: Record<SymbolType, string> = { btc: 'BTC/USDT', eth: 'ETH/USDT' };

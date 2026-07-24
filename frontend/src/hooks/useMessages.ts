@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Message, MessagesResponse } from '../types';
 
-const API_BASE = '/api';
+const API_BASE = '/runnerxbt/api';
 
 export function useMessages(wsMessage: Message | null) {
   const [messages, setMessages] = useState<Message[]>([]);

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ConnectionStatus, Message } from '../types';
 
-const WS_URL = 'ws://' + window.location.hostname + ':8000/ws';
+const WS_URL = ((window.location.protocol === 'https:') ? 'wss://' : 'ws://') + window.location.host + '/runnerxbt/ws';
 const MAX_RECONNECT_DELAY = 30000;
 const PING_INTERVAL = 30000;
 

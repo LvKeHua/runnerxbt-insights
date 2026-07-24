@@ -189,6 +189,44 @@ async def serve_assets(path: str):
     raise HTTPException(404, "Asset not found")
 
 
+
+# ── RunnerXBT Prefixed Routes (for Cloudflare Tunnel) ─────────────
+@app.get('/runnerxbt/api/messages')
+def get_messages_prefixed():
+    return get_messages()
+
+@app.get('/runnerxbt/api/daily')
+def get_daily_prefixed():
+    return get_daily()
+
+@app.get('/runnerxbt/api/btc')
+def get_btc_prefixed():
+    return get_btc()
+
+@app.get('/runnerxbt/api/btc4h')
+def get_btc4h_prefixed():
+    return get_btc4h()
+
+@app.get('/runnerxbt/api/eth')
+def get_eth_prefixed():
+    return get_eth()
+
+@app.get('/runnerxbt/api/status')
+def get_status_prefixed():
+    return get_status()
+
+@app.websocket('/runnerxbt/ws')
+async def websocket_endpoint_prefixed(websocket: WebSocket):
+    await websocket_endpoint(websocket)
+
+@app.get('/runnerxbt/')
+async def serve_index_prefixed():
+    return await serve_index()
+
+@app.get('/runnerxbt/assets/{path:path}')
+async def serve_assets_prefixed(path: str):
+    return await serve_assets(path)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
