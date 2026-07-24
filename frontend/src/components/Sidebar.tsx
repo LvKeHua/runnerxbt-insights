@@ -26,7 +26,7 @@ export function Sidebar({ messages, onSelectMessage, selectedId }: Props) {
           <div key={date}>
             <div style={{ padding: '10px 12px 4px 28px', fontSize: 10, color: colors.text.secondary, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{date} <span style={{ fontSize: 9, background: colors.bg.elevated, padding: '0 5px', borderRadius: 2 }}>{msgs.length}</span></div>
             {msgs.map((m) => (
-              <div key={m.id} onClick={() => onSelectMessage(m)} style={{ padding: '5px 12px 5px 28px', cursor: 'pointer', borderLeft: m.id === selectedId ? '2px solid ' + ag : '2px solid transparent', background: m.id === selectedId ? 'rgba(51,204,102,0.08)' : 'transparent', transition: 'all .1s', position: 'relative' }}>
+              <div key={m.id} onClick={() => onSelectMessage(m)} data-msg-id={m.id} style={{ padding: '5px 12px 5px 28px', cursor: 'pointer', borderLeft: m.id === selectedId ? '2px solid ' + ag : '2px solid transparent', background: m.id === selectedId ? 'rgba(51,204,102,0.08)' : 'transparent', transition: 'all .1s', position: 'relative' }}>
                 <div style={{ position: 'absolute', left: 15, top: 0, bottom: 0, width: 1, background: bl }} />
                 <div style={{ fontSize: 9, color: colors.text.muted, marginBottom: 1 }}><span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', backgroundColor: colors.level[m.level || 'blue'], marginRight: 4, verticalAlign: 'middle' }} />{m.timestamp || ''}</div>
                 <div style={{ fontSize: 11, color: colors.text.primary, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{(m.text || '').slice(0, 80)}{m.has_media ? ' ATT' : ''}</div>

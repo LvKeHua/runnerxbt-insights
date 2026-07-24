@@ -24,6 +24,12 @@ export default function App() {
 
   const filteredMessages = messages.filter((m) => filterLevels[m.level || 'blue']);
 
+  const handleSelectMessage = (msg: Message) => {
+    setSelectedMessage(msg);
+    const el = document.querySelector('[data-msg-id="' + msg.id + '"]');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', height: '100vh',
@@ -46,12 +52,12 @@ export default function App() {
         {sidebarOpen && (
           <Sidebar
             messages={filteredMessages}
-            onSelectMessage={setSelectedMessage}
+            onSelectMessage={handleSelectMessage}
             selectedId={selectedMessage?.id}
           />
         )}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <ChartView />
+          <ChartView messages={filteredMessages} onSelectMessage={handleSelectMessage} />
         </div>
         {selectedMessage && (
           <MessageDetail message={selectedMessage} onClose={() => setSelectedMessage(null)} />

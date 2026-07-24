@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from ws_hub import WebSocketHub
+from classifier import classify_message
 from config import DATA_DIR, MEDIA_DIR
 
 # Configure logging
@@ -82,6 +83,10 @@ def get_messages():
     data = load_json(DATA_DIR / "messages_final.json")
     if data is None:
         raise HTTPException(404, "messages_final.json not found")
+    # Inject level classification into each message
+    for msg in data:
+        if "level" not in msg or not msg["level"]:
+            msg["level"] = classify_message(msg.get("text", ""))
     return {"total": len(data), "data": data}
 
 

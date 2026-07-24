@@ -40,3 +40,27 @@ button { cursor: pointer; font-family: inherit; }
 @media (max-width: 1024px) {
   :root { --side-w: 240px; --panel-w: 320px; }
 }
+/* ─── Glassmorphism & Glow Effects ─── */
+.glass-panel {
+  background: rgba(18, 26, 20, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(51, 204, 102, 0.15);
+  border-radius: 4px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 8px rgba(51, 204, 102, 0.05);
+}
+
+.msg-item:hover {
+  background: rgba(51, 204, 102, 0.06) !important;
+}
+
+.msg-item.active {
+  border-left: 2px solid #33cc66 !important;
+  background: rgba(51, 204, 102, 0.1) !important;
+}
+
+/* Marker glow animation */
+@keyframes marker-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
