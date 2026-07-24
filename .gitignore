@@ -6,3 +6,8 @@ __pycache__/
 *.session
 *.bak
 .vite
+_chrome_profile/
+test_conn.session
+test_session.session
+test_session3.session
+_session.json
