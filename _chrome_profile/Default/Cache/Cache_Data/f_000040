@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>RunnerXBT Insights · K-line</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --red: #f85149;
+  --chart-bg: #0d1117;
+  --chart-grid: #21262d;
+  --chart-candle-up: #3fb950;
+  --chart-candle-down: #f85149;
+  --chart-wick-up: #3fb950;
+  --chart-wick-down: #f85149;
+  --msg-bg: #1c2333;
+  --msg-border: #58a6ff44;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  height: 100%;
+  margin: 0;
+}
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 380px;
+  min-width: 380px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: -0.3px;
+}
+.sidebar-header .sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.sidebar-stats {
+  display: flex;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.sidebar-stats span { display: flex; align-items: center; gap: 4px; }
+.sidebar-stats strong { color: var(--text); font-weight: 500; }
+
+/* Message search */
+.msg-search {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.msg-search input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color .2s;
+}
+.msg-search input:focus { border-color: var(--accent); }
+.msg-search input::placeholder { color: var(--text-muted); }
+
+/* Message list */
+.msg-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+.msg-list::-webkit-scrollbar { width: 6px; }
+.msg-list::-webkit-scrollbar-track { background: transparent; }
+.msg-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.msg-item {
+  padding: 10px 20px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all .15s;
+  border-bottom: 1px solid rgba(48,54,61,0.4);
+}
+.msg-item:hover { background: rgba(88,166,255,0.06); border-left-color: var(--accent); }
+.msg-item.active { background: rgba(88,166,255,0.1); border-left-color: var(--accent); }
+.msg-item .date-badge {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.msg-item .preview {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+.msg-item .preview .has-media {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-top: 4px;
+}
+.msg-date-group {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 12px 20px 4px;
+  font-weight: 500;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.chart-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+.symbol-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 3px;
+}
+.symbol-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'Inter', sans-serif;
+}
+.symbol-btn:hover { color: var(--text); }
+.symbol-btn.active { background: var(--accent); color: #fff; }
+.chart-container {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+#chart {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Message detail panel */
+.msg-detail {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 16px 24px;
+  max-height: 40%;
+  overflow-y: auto;
+  z-index: 10;
+  border-radius: 12px 12px 0 0;
+}
+.msg-detail.open { display: block; }
+.msg-detail .close-btn {
+  float: right;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+}
+.msg-detail .detail-date {
+  font-size: 12px;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 6px;
+}
+.msg-detail .detail-text {
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg-detail .detail-media { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.msg-detail .detail-media img { max-width: 100%; max-height: 300px; border-radius: 6px; }
+.msg-detail .detail-media a { color: var(--accent); font-size: 13px; word-break: break-all; }
+
+/* Date marker on chart */
+.date-marker {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  body { flex-direction: column; }
+  .sidebar { width: 100%; min-width: 0; max-height: 50vh; }
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin-right: 10px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Tooltip */
+.chart-tooltip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>@RunnerXBT_Insights</h1>
+    <div class="sub">Trading signals, market analysis & alpha</div>
+  </div>
+  <div class="sidebar-stats" id="stats-bar">
+    <span>📊 <strong id="msg-count">—</strong> messages</span>
+    <span>📅 <strong id="day-count">—</strong> days</span>
+  </div>
+  <div class="msg-search">
+    <input type="text" id="search-input" placeholder="Search messages... (min 2 chars)">
+  </div>
+  <div class="msg-list" id="msg-list">
+    <div class="loading"><div class="spinner"></div>Loading messages...</div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="chart-header">
+    <div class="chart-title">Daily K-line</div>
+    <div class="symbol-tabs">
+      <button class="symbol-btn active" data-symbol="btc">BTC/USDT</button>
+      <button class="symbol-btn" data-symbol="eth">ETH/USDT</button>
+    </div>
+  </div>
+  <div class="chart-container">
+    <div class="loading" id="chart-loading"><div class="spinner"></div>Loading chart...</div>
+    <div id="chart"></div>
+  </div>
+  <div class="msg-detail" id="msg-detail">
+    <button class="close-btn" id="close-detail">✕</button>
+    <div class="detail-date" id="detail-date"></div>
+    <div class="detail-text" id="detail-text"></div>
+    <div class="detail-media" id="detail-media"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  messages: [],
+  dailyMsgs: {},
+  btcData: [],
+  ethData: [],
+  currentSymbol: 'btc',
+  chart: null,
+  candleSeries: null,
+  markers: [],
+  visibleRange: null,
+  searchTerm: '',
+};
+
+// ============================================================
+// DATA LOADING
+// ============================================================
+async function loadAll() {
+  const [msgsRes, dailyRes, btcRes, ethRes] = await Promise.all([
+    fetch('/api/messages').then(r => r.json()),
+    fetch('/api/daily').then(r => r.json()),
+    fetch('/api/btc').then(r => r.json()),
+    fetch('/api/eth').then(r => r.json()),
+  ]);
+  
+  state.messages = msgsRes.data;
+  state.dailyMsgs = dailyRes.data;
+  state.btcData = btcRes.data;
+  state.ethData = ethRes.data;
+  
+  document.getElementById('msg-count').textContent = msgsRes.total.toLocaleString();
+  document.getElementById('day-count').textContent = dailyRes.total_days;
+  
+  renderMessageList(state.messages);
+  initChart();
+}
+
+// ============================================================
+// MESSAGE LIST
+// ============================================================
+function renderMessageList(msgs) {
+  const container = document.getElementById('msg-list');
+  
+  const search = state.searchTerm.toLowerCase().trim();
+  
+  // Build date-grouped HTML
+  let html = '';
+  let currentDate = '';
+  let visibleCount = 0;
+  
+  // msgs is newest-first, we render newest at top
+  for (const m of msgs) {
+    const date = m.date || '';
+    const text = (m.text || '').trim();
+    if (!text) continue;
+    
+    if (search) {
+      if (!text.toLowerCase().includes(search)) continue;
+    }
+    
+    if (date && date !== currentDate) {
+      currentDate = date;
+      html += `<div class="msg-date-group">${date}</div>`;
+    }
+    
+    const preview = text.slice(0, 150).replace(/\n/g, ' ');
+    const hasMedia = (m.images && m.images.length) || (m.links && m.links.length);
+    
+    html += `<div class="msg-item" data-idx="${m.id}" onclick="selectMessage(${m.id})">
+      <div class="date-badge">${m.timestamp || ''}</div>
+      <div class="preview">${escapeHtml(preview)}${hasMedia ? '<div class="has-media">📎 media</div>' : ''}</div>
+    </div>`;
+    visibleCount++;
+  }
+  
+  if (!visibleCount) {
+    html = '<div style="padding: 20px; color: var(--text-muted); text-align: center; font-size: 13px;">No messages found</div>';
+  }
+  
+  container.innerHTML = html;
+}
+
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+function selectMessage(idx) {
+  const m = state.messages.find(x => x.id === idx);
+  if (!m) return;
+  
+  // Highlight in list
+  document.querySelectorAll('.msg-item').forEach(el => el.classList.remove('active'));
+  const item = document.querySelector(`.msg-item[data-idx="${idx}"]`);
+  if (item) item.classList.add('active');
+  
+  // Show detail panel
+  showDetail(m);
+  
+  // Jump to date on chart
+  if (m.date && state.candleSeries) {
+    const ts = new Date(m.date).getTime();
+    state.chart.timeScale().scrollToPosition(0, false);
+    state.chart.timeScale().setVisibleRange({
+      from: ts / 1000 - 86400 * 15,
+      to: ts / 1000 + 86400 * 5,
+    });
+  }
+}
+
+function showDetail(m) {
+  const panel = document.getElementById('msg-detail');
+  document.getElementById('detail-date').textContent = `${m.date} ${m.timestamp || ''}`;
+  document.getElementById('detail-text').textContent = m.text || '';
+  
+  const media = document.getElementById('detail-media');
+  media.innerHTML = '';
+  
+  if (m.images) {
+    for (const img of m.images) {
+      const el = document.createElement('img');
+      el.src = img;
+      el.loading = 'lazy';
+      media.appendChild(el);
+    }
+  }
+  if (m.links) {
+    for (const link of m.links) {
+      const a = document.createElement('a');
+      a.href = link;
+      a.target = '_blank';
+      a.textContent = link;
+      media.appendChild(a);
+    }
+  }
+  
+  panel.classList.add('open');
+}
+
+// ============================================================
+// SEARCH
+// ============================================================
+document.getElementById('search-input').addEventListener('input', (e) => {
+  state.searchTerm = e.target.value;
+  renderMessageList(state.messages);
+});
+
+document.getElementById('close-detail').addEventListener('click', () => {
+  document.getElementById('msg-detail').classList.remove('open');
+});
+
+// ============================================================
+// SYMBOL TABS
+// ============================================================
+document.querySelectorAll('.symbol-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.symbol-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.currentSymbol = btn.dataset.symbol;
+    updateChart();
+  });
+});
+
+// ============================================================
+// CHART
+// ============================================================
+function initChart() {
+  const chartContainer = document.getElementById('chart');
+  
+  state.chart = LightweightCharts.createChart(chartContainer, {
+    layout: {
+      background: { type: 'solid', color: '#0d1117' },
+      textColor: '#8b949e',
+      fontSize: 11,
+    },
+    grid: {
+      vertLines: { color: '#21262d' },
+      horzLines: { color: '#21262d' },
+    },
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Normal,
+      vertLine: { color: '#58a6ff', width: 1, style: LightweightCharts.LineStyle.Dashed, labelBackgroundColor: '#58a6ff' },
+      horzLine: { color: '#58a6ff', width: 1, style: LightweightCharts.LineStyle.Dashed, labelBackgroundColor: '#58a6ff' },
+    },
+    timeScale: {
+      borderColor: '#30363d',
+      timeVisible: false,
+      secondsVisible: false,
+      rightOffset: 8,
+      barSpacing: 3,
+      fixLeftEdge: true,
+      fixRightEdge: true,
+    },
+    rightPriceScale: {
+      borderColor: '#30363d',
+      scaleMargins: { top: 0.1, bottom: 0.3 },
+    },
+  });
+  
+  state.candleSeries = state.chart.addCandlestickSeries({
+    upColor: '#3fb950',
+    downColor: '#f85149',
+    borderUpColor: '#3fb950',
+    borderDownColor: '#f85149',
+    wickUpColor: '#3fb950',
+    wickDownColor: '#f85149',
+  });
+  
+  document.getElementById('chart-loading').style.display = 'none';
+  
+  updateChart();
+  
+  // Handle resize - update BOTH width and height
+  const ro = new ResizeObserver(() => {
+    const parent = chartContainer.parentElement;
+    if (parent) {
+      state.chart.applyOptions({
+        width: parent.clientWidth,
+        height: parent.clientHeight,
+      });
+    }
+  });
+  ro.observe(chartContainer.parentElement);
+  
+  // Click on chart to find nearest message
+  state.chart.subscribeClick((param) => {
+    if (!param.time || !param.point) return;
+    const clickedTs = typeof param.time === 'object' ? param.time : new Date(param.time * 1000);
+    // Actually lightweight charts returns time as a timestamp or string
+    // Let's use a different approach
+    findNearestMessage(param);
+  });
+}
+
+function updateChart() {
+  const data = state.currentSymbol === 'btc' ? state.btcData : state.ethData;
+  
+  if (!data || !data.length) return;
+  
+  // Convert to Lightweight Charts format
+  const chartData = data.map(d => ({
+    time: d.t / 1000,
+    open: d.o,
+    high: d.h,
+    low: d.l,
+    close: d.c,
+  }));
+  
+  state.candleSeries.setData(chartData);
+  
+  // Add markers for days with messages
+  updateMarkers(chartData);
+  
+  // Fit to content
+  state.chart.timeScale().fitContent();
+}
+
+function updateMarkers(chartData) {
+  // Remove old markers
+  state.candleSeries.setMarkers([]);
+  
+  // Get date set from messages
+  const dateSet = new Set();
+  state.messages.forEach(m => {
+    if (m.date) dateSet.add(m.date);
+  });
+  
+  // Create markers for each day that has messages and chart data
+  const markers = [];
+  const msgCountByDate = {};
+  state.messages.forEach(m => {
+    if (m.date) {
+      msgCountByDate[m.date] = (msgCountByDate[m.date] || 0) + 1;
+    }
+  });
+  
+  // Map date strings to chart data points
+  const dateToCandle = {};
+  chartData.forEach(c => {
+    const d = new Date(c.time * 1000);
+    const key = d.toISOString().slice(0, 10);
+    dateToCandle[key] = c.time;
+  });
+  
+  for (const [date, count] of Object.entries(msgCountByDate)) {
+    const chartTime = dateToCandle[date];
+    if (!chartTime) continue;
+    
+    markers.push({
+      time: chartTime,
+      position: 'aboveBar',
+      color: count > 5 ? '#58a6ff' : count > 2 ? '#7ee787' : '#d2a8ff',
+      shape: 'circle',
+      size: Math.min(count, 3),
+      text: `${count} msgs`,
+    });
+  }
+  
+  // Limit markers to avoid performance issues
+  if (markers.length > 500) {
+    // Sample markers
+    const step = Math.ceil(markers.length / 500);
+    state.candleSeries.setMarkers(markers.filter((_, i) => i % step === 0));
+  } else {
+    state.candleSeries.setMarkers(markers);
+  }
+}
+
+function findNearestMessage(param) {
+  const time = param.time;
+  if (!time) return;
+  
+  // Get the date string for this timestamp
+  const dt = new Date(time * 1000);
+  const dateKey = dt.toISOString().slice(0, 10);
+  
+  // Find messages on this date
+  const msgsOnDate = state.messages.filter(m => m.date === dateKey);
+  if (msgsOnDate.length) {
+    selectMessage(msgsOnDate[0].id);
+    return;
+  }
+  
+  // Find nearest date
+  const ts = time * 1000;
+  let nearest = null;
+  let nearestDiff = Infinity;
+  
+  for (const m of state.messages) {
+    if (!m.date) continue;
+    const mts = new Date(m.date).getTime();
+    const diff = Math.abs(mts - ts);
+    if (diff < nearestDiff && diff < 86400000 * 3) { // within 3 days
+      nearestDiff = diff;
+      nearest = m;
+    }
+  }
+  
+  if (nearest) selectMessage(nearest.id);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadAll();
+</script>
+</body>
+</html>
