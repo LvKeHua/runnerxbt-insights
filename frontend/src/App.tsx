@@ -6,15 +6,16 @@ import { ConnectionStatus } from './components/ConnectionStatus';
 import { StatsBar } from './components/StatsBar';
 import { Sidebar } from './components/Sidebar';
 import { ChartView } from './components/ChartView';
-import { MessageDetail } from './components/MessageDetail';
 import { FilterBar } from './components/FilterBar';
+import { DayPostsPanel } from './components/DayPostsPanel';
 import type { Message, Level } from './types';
 import { colors } from './theme/colors';
 
 export default function App() {
   const { status, lastMessage } = useWebSocket();
-  const { messages, loading } = useMessages(lastMessage);
+  const { messages, loading, refresh } = useMessages(lastMessage);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | undefined>();
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [filterLevels, setFilterLevels] = useState<Record<Level, boolean>>({
     red: true,
@@ -26,8 +27,16 @@ export default function App() {
 
   const handleSelectMessage = (msg: Message) => {
     setSelectedMessage(msg);
-    const el = document.querySelector('[data-msg-id="' + msg.id + '"]');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setSelectedDate(msg.date ? msg.date.split('T')[0] : undefined);
+  };
+
+  const handleChartSelectDate = (dateStr: string) => {
+    // Toggle: clicking same date closes panel
+    if (selectedDate === dateStr) {
+      setSelectedDate(undefined);
+      return;
+    }
+    setSelectedDate(dateStr);
   };
 
   return (
@@ -46,6 +55,21 @@ export default function App() {
         >
           {sidebarOpen ? 'Hide' : 'Show'} Timeline
         </button>
+        <button
+          onClick={async () => {
+            try {
+              await fetch('/runnerxbt/api/refresh');
+            } catch { /* skip if backend refresh unavailable */ }
+            refresh();
+          }}
+          title="Fetch new messages from Telegram & refresh"
+          style={{
+            marginLeft: 6, background: 'transparent', border: '1px solid ' + colors.border.default,
+            color: colors.text.muted, fontSize: 10, padding: '2px 8px', borderRadius: 2, cursor: 'pointer',
+          }}
+        >
+          ↻ Refresh
+        </button>
       </StatsBar>
       <FilterBar filterLevels={filterLevels} onChange={setFilterLevels} />
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
@@ -54,13 +78,23 @@ export default function App() {
             messages={filteredMessages}
             onSelectMessage={handleSelectMessage}
             selectedId={selectedMessage?.id}
+            selectedDate={selectedDate}
           />
         )}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <ChartView messages={filteredMessages} onSelectMessage={handleSelectMessage} />
+          <ChartView
+            messages={filteredMessages}
+            onSelectMessage={handleSelectMessage}
+            onSelectDate={handleChartSelectDate}
+            selectedDate={selectedDate}
+          />
         </div>
-        {selectedMessage && (
-          <MessageDetail message={selectedMessage} onClose={() => setSelectedMessage(null)} />
+        {selectedDate && (
+          <DayPostsPanel
+            date={selectedDate}
+            messages={filteredMessages.filter(m => m.date && m.date.startsWith(selectedDate))}
+            onClose={() => setSelectedDate(undefined)}
+          />
         )}
       </div>
     </div>
