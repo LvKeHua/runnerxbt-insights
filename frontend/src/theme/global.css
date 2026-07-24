@@ -31,3 +31,12 @@ body { font-family: 'JetBrains Mono', 'Courier New', monospace; background: var(
 a { color: var(--accent-blue); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button { cursor: pointer; font-family: inherit; }
+
+@media (max-width: 768px) {
+  :root { --side-w: 0px; --panel-w: 100%; }
+  .sidebar-mobile-hidden { display: none !important; }
+  .detail-mobile-overlay { position: fixed !important; inset: 0 !important; z-index: 100 !important; width: 100% !important; min-width: 100% !important; max-width: 100% !important; background: var(--bg-surface) !important; }
+}
+@media (max-width: 1024px) {
+  :root { --side-w: 240px; --panel-w: 320px; }
+}

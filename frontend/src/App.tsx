@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import './theme/global.css';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useMessages } from './hooks/useMessages';
@@ -9,11 +9,13 @@ import { ChartView } from './components/ChartView';
 import { MessageDetail } from './components/MessageDetail';
 import { FilterBar } from './components/FilterBar';
 import type { Message, Level } from './types';
+import { colors } from './theme/colors';
 
 export default function App() {
   const { status, lastMessage } = useWebSocket();
   const { messages, loading } = useMessages(lastMessage);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [filterLevels, setFilterLevels] = useState<Record<Level, boolean>>({
     red: true,
     yellow: true,
@@ -29,16 +31,27 @@ export default function App() {
     }}>
       <StatsBar messages={messages} loading={loading}>
         <ConnectionStatus status={status} />
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          style={{
+            marginLeft: 8, background: 'transparent', border: '1px solid ' + colors.border.default,
+            color: colors.text.muted, fontSize: 10, padding: '2px 8px', borderRadius: 2, cursor: 'pointer',
+          }}
+        >
+          {sidebarOpen ? 'Hide' : 'Show'} Timeline
+        </button>
       </StatsBar>
       <FilterBar filterLevels={filterLevels} onChange={setFilterLevels} />
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <Sidebar
-          messages={filteredMessages}
-          onSelectMessage={setSelectedMessage}
-          selectedId={selectedMessage?.id}
-        />
+        {sidebarOpen && (
+          <Sidebar
+            messages={filteredMessages}
+            onSelectMessage={setSelectedMessage}
+            selectedId={selectedMessage?.id}
+          />
+        )}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <ChartView messages={filteredMessages} />
+          <ChartView />
         </div>
         {selectedMessage && (
           <MessageDetail message={selectedMessage} onClose={() => setSelectedMessage(null)} />
