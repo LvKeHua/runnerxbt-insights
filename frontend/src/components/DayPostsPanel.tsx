@@ -118,26 +118,15 @@ export function DayPostsPanel({ date, messages, onClose }: Props) {
   );
 
   return (
-    <>
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.3)',
-          zIndex: 998,
-        }}
-        data-testid="day-posts-backdrop"
-      />
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-label={`Posts for ${date}`}
-        tabIndex={0}
-        className="glass-panel panel-enter"
-        style={panelStyle}
-      >
-        {renderPanelContent()}
-      </div>
-    </>
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-label={`Posts for ${date}`}
+      tabIndex={0}
+      className="glass-panel panel-enter"
+      style={panelStyle}
+    >
+      {renderPanelContent()}
+    </div>
   );
 }
