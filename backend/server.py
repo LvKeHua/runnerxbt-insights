@@ -38,11 +38,40 @@ hub = WebSocketHub()
 # ── Telegram Listener (optional - only starts if session exists) ──
 listener = None
 
+# ── Level Classification Cache ────────────────────────────────────
+_level_cache: dict[int, str] = {}  # msg_id -> level
+
+
+def classify_messages_batch(messages: list[dict]) -> None:
+    """Pre-compute level classification for all messages and cache results."""
+    global _level_cache
+    for msg in messages:
+        msg_id = msg.get("id")
+        if msg_id is not None and (msg.get("level") is None or msg.get("level") == ""):
+            msg["level"] = classify_message(msg.get("text", ""))
+            _level_cache[msg_id] = msg["level"]
+        elif msg_id is not None and msg.get("level"):
+            _level_cache[msg_id] = msg["level"]
+
+
+def refresh_cache():
+    """Re-classify all messages. Called after data refresh."""
+    global _level_cache
+    _level_cache.clear()
+
 
 @app.on_event("startup")
 async def startup():
-    """Start Telegram listener if session is available."""
+    """Start Telegram listener if session is available and warm classification cache."""
     global listener
+    # Warm the classification cache
+    try:
+        data = load_json(DATA_DIR / "messages_final.json")
+        if data:
+            classify_messages_batch(data)
+            logger.info(f"Classification cache warmed: {len(_level_cache)} messages classified")
+    except Exception as e:
+        logger.warning(f"Failed to warm classification cache: {e}")
     session_path = Path(__file__).parent.parent / "scraper" / "tg_session"
     if session_path.with_suffix(".session").exists():
         try:
@@ -83,10 +112,8 @@ def get_messages():
     data = load_json(DATA_DIR / "messages_final.json")
     if data is None:
         raise HTTPException(404, "messages_final.json not found")
-    # Inject level classification into each message
-    for msg in data:
-        if "level" not in msg or not msg["level"]:
-            msg["level"] = classify_message(msg.get("text", ""))
+    # Use cached classification instead of per-request computation
+    classify_messages_batch(data)
     return {"total": len(data), "data": data}
 
 
@@ -219,6 +246,114 @@ def get_eth_prefixed():
 @app.get('/runnerxbt/api/status')
 def get_status_prefixed():
     return get_status()
+
+@app.get('/runnerxbt/api/refresh')
+async def refresh_messages_prefixed():
+    return await refresh_messages()
+
+@app.get("/api/refresh")
+async def refresh_messages():
+    """Manually trigger a fetch of new messages from Telegram (catch-up)."""
+    session_path = Path(__file__).parent.parent / "scraper" / "tg_session"
+    if not session_path.with_suffix(".session").exists():
+        raise HTTPException(400, "No Telegram session found. Cannot refresh.")
+
+    try:
+        from telethon import TelegramClient
+        from telethon.errors import FloodWaitError
+        from config import TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_GROUPS, MEDIA_DIR, CLASSIFICATION_RULES
+        from classifier import classify_message
+
+        # Read existing messages to find max id
+        current = load_json(DATA_DIR / "messages_final.json") or []
+        max_id = max((m.get("id", 0) for m in current), default=0)
+        existing_ids = {m.get("id") for m in current}
+
+        client = TelegramClient(str(session_path), TELEGRAM_API_ID, TELEGRAM_API_HASH)
+        await client.connect()
+        if not await client.is_user_authorized():
+            await client.disconnect()
+            raise HTTPException(400, "Telegram session not authorized. Re-run scraper.")
+
+        new_count = 0
+        for group in TELEGRAM_GROUPS:
+            if not group.get("enabled", True):
+                continue
+            try:
+                entity = await client.get_entity(group["username"])
+                async for msg in client.iter_messages(entity, offset_id=max_id, reverse=True, limit=100):
+                    if msg.id in existing_ids:
+                        continue
+                    text = msg.text or ""
+                    level = classify_message(text, CLASSIFICATION_RULES)
+                    entry = {
+                        "id": msg.id,
+                        "date": msg.date.isoformat() if msg.date else None,
+                        "text": text,
+                        "level": level,
+                        "group": str(entity.id),
+                        "has_media": msg.media is not None,
+                        "timestamp": datetime.now().strftime("%H:%M"),
+                    }
+                    # Download media
+                    if msg.media:
+                        try:
+                            ext = ".jpg"
+                            if hasattr(msg.media, "document") and msg.media.document:
+                                mime = msg.media.document.mime_type or ""
+                                ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp",
+                                           "video/mp4": ".mp4", "video/gif": ".gif"}
+                                ext = ext_map.get(mime, ".bin")
+                            fname = f"msg_{msg.id}{ext}"
+                            fpath = str(MEDIA_DIR / fname)
+                            if not Path(fpath).exists():
+                                downloaded = await client.download_media(msg, file=fpath)
+                                if downloaded:
+                                    entry["media_path"] = f"/media/{fname}"
+                                    if msg.media.photo:
+                                        entry["images"] = [f"/media/{fname}"]
+                        except Exception as e:
+                            logger.warning("Media download failed for msg %d: %s", msg.id, e)
+
+                    # Extract links
+                    if text:
+                        import re
+                        urls = re.findall(r'https?://[^\s<>"]+', text)
+                        if urls:
+                            entry["links"] = urls
+
+                    current.append(entry)
+                    existing_ids.add(msg.id)
+                    new_count += 1
+
+                    # Broadcast via WebSocket
+                    try:
+                        await hub.broadcast(entry)
+                    except Exception:
+                        pass
+
+            except FloodWaitError as e:
+                logger.warning("FloodWait on refresh for %s: waiting %ds", group["username"], e.seconds)
+            except Exception as e:
+                logger.warning("Refresh fetch failed for %s: %s", group["username"], e)
+
+        if new_count > 0:
+            current.sort(key=lambda m: m.get("id", 0), reverse=True)
+            (DATA_DIR / "messages_final.json").write_text(
+                json.dumps(current, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            # Clear cache so it gets rebuilt on next request
+            refresh_cache()
+
+        await client.disconnect()
+        return {"refreshed": True, "new_messages": new_count}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Refresh failed: %s", e)
+        raise HTTPException(500, f"Refresh failed: {e}")
+
 
 @app.websocket('/runnerxbt/ws')
 async def websocket_endpoint_prefixed(websocket: WebSocket):

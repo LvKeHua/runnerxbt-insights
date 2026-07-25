@@ -13,7 +13,7 @@ import { colors } from './theme/colors';
 
 export default function App() {
   const { status, lastMessage } = useWebSocket();
-  const { messages, loading, refresh } = useMessages(lastMessage);
+  const { messages, loading, error, refresh } = useMessages(lastMessage);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | undefined>();
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
@@ -76,6 +76,9 @@ export default function App() {
         {sidebarOpen && (
           <Sidebar
             messages={filteredMessages}
+            loading={loading}
+            error={error}
+            onRetry={refresh}
             onSelectMessage={handleSelectMessage}
             selectedId={selectedMessage?.id}
             selectedDate={selectedDate}

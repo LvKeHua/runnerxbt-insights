@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Message } from '../types';
 import { colors } from '../theme/colors';
 
@@ -17,6 +17,20 @@ function isVideoPath(path: string): boolean {
 
 export function DayPostsPanel({ date, messages, onClose }: Props) {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const toggleExpand = (id: number) => {
     setExpandedIds(prev => {
@@ -28,29 +42,29 @@ export function DayPostsPanel({ date, messages, onClose }: Props) {
   };
 
   const bd = colors.border.default;
+  const panelStyle: React.CSSProperties = {
+    width: 'min(400px, calc(100vw - 340px))',
+    minWidth: 280,
+    background: 'rgba(18, 26, 20, 0.92)',
+    borderLeft: '1px solid ' + bd,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  };
 
-  if (messages.length === 0) {
-    return (
-      <div className="glass-panel" style={{ width: 400, minWidth: 400, background: 'rgba(18, 26, 20, 0.92)', borderLeft: '1px solid ' + bd, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid ' + bd, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: colors.text.muted }}>{date}</span>
-          <button onClick={onClose} style={{ background: 'none', border: '1px solid ' + bd, color: colors.text.muted, fontSize: 11, padding: '2px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: 'inherit' }}>Close</button>
-        </div>
+  const renderPanelContent = () => (
+    <>
+      <div style={{ padding: '8px 12px', borderBottom: '1px solid ' + bd, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: colors.text.secondary }}>{date} <span style={{ fontSize: 9, background: colors.bg.elevated, padding: '0 5px', borderRadius: 2, marginLeft: 4 }}>{messages.length}</span></span>
+        <button ref={closeButtonRef} onClick={onClose} style={{ background: 'none', border: '1px solid ' + bd, color: colors.text.muted, fontSize: 11, padding: '2px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: 'inherit' }}>Close</button>
+      </div>
+      {messages.length === 0 ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.text.muted, fontSize: 12 }}>
           该日无帖子
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="glass-panel" style={{ width: 400, minWidth: 400, background: 'rgba(18, 26, 20, 0.92)', borderLeft: '1px solid ' + bd, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ padding: '8px 12px', borderBottom: '1px solid ' + bd, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: colors.text.secondary }}>{date} <span style={{ fontSize: 9, background: colors.bg.elevated, padding: '0 5px', borderRadius: 2, marginLeft: 4 }}>{messages.length}</span></span>
-        <button onClick={onClose} style={{ background: 'none', border: '1px solid ' + bd, color: colors.text.muted, fontSize: 11, padding: '2px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: 'inherit' }}>Close</button>
-      </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
-        {messages.map((m) => {
+      ) : (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
+          {messages.map((m) => {
           const level = m.level || 'blue';
           const isExpanded = expandedIds.has(m.id);
           const preview = (m.text || '').replace(/\*\*/g, '').replace(/\n/g, ' ').slice(0, 50);
@@ -99,6 +113,31 @@ export function DayPostsPanel({ date, messages, onClose }: Props) {
           );
         })}
       </div>
-    </div>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.3)',
+          zIndex: 998,
+        }}
+        data-testid="day-posts-backdrop"
+      />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-label={`Posts for ${date}`}
+        tabIndex={0}
+        className="glass-panel panel-enter"
+        style={panelStyle}
+      >
+        {renderPanelContent()}
+      </div>
+    </>
   );
 }

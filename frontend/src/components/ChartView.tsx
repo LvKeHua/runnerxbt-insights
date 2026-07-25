@@ -102,13 +102,13 @@ export function ChartView({ messages, onSelectMessage, onSelectDate, selectedDat
       let shape: string, position: string, size: number, color: string;
       if (count > 5) {
         shape = 'arrowUp'; color = LEVEL_COLORS[topLvl] || LEVEL_COLORS.blue;
-        size = Math.min(count, 5); position = 'belowBar';
+        size = Math.min(count, 8); position = 'belowBar';
       } else if (count > 2) {
         shape = 'circle'; color = LEVEL_COLORS[topLvl] || LEVEL_COLORS.blue;
-        size = 3; position = 'aboveBar';
+        size = 5; position = 'aboveBar';
       } else {
         shape = 'circle'; color = LEVEL_COLORS[topLvl] || LEVEL_COLORS.blue;
-        size = 2; position = 'aboveBar';
+        size = 4; position = 'aboveBar';
       }
       markers.push({ time: chartTime as Time, position, color, shape, size, text: '' + count });
     }
@@ -228,15 +228,24 @@ export function ChartView({ messages, onSelectMessage, onSelectDate, selectedDat
       }
     } catch (e) { console.warn('Density chart init failed:', e); }
 
-    // Chart click -> always select date (DayPostsPanel handles empty state)
+    // Chart click -> select date via time-lookup (handles marker clicks where param.time is undefined)
     chart.subscribeClick((param: any) => {
-      if (!param.time) return;
-      const time = typeof param.time === 'number' ? param.time : (param.time as any).timestamp || param.time;
-      const dateKey = new Date((time as number) * 1000).toISOString().slice(0, 10);
-      // Always call onSelectDate - DayPostsPanel will show posts or empty state
+      let clickTime: number | undefined;
+
+      if (param.time !== undefined) {
+        // Direct click on a candle (param.time is available)
+        clickTime = typeof param.time === 'number' ? param.time : (param.time as any).timestamp || param.time;
+      } else if (param.point) {
+        // Click between candles or on markers - use coordinate lookup
+        clickTime = chart.timeScale().coordinateToTime(param.point.x) as number | undefined;
+      }
+
+      if (clickTime === undefined || clickTime === null) return;
+
+      const dateKey = new Date((clickTime as number) * 1000).toISOString().slice(0, 10);
       onSelectDateRef.current?.(dateKey);
       // Zoom chart to clicked time
-      chart.timeScale().setVisibleRange({ from: ((time as number) - 86400 * 7) as Time, to: ((time as number) + 86400 * 10) as Time });
+      chart.timeScale().setVisibleRange({ from: ((clickTime as number) - 86400 * 7) as Time, to: ((clickTime as number) + 86400 * 10) as Time });
     });
 
     chartRef.current = chart;
@@ -283,12 +292,21 @@ export function ChartView({ messages, onSelectMessage, onSelectDate, selectedDat
           ))}
         </div>
       </div>
-      <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+      <div style={{ flex: 1, position: 'relative', minHeight: 0, cursor: 'pointer' }}>
         <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-        {loading && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.text.muted, fontSize: 12, pointerEvents: 'none' }}>Loading chart...</div>}
-        {error && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.accent.red, fontSize: 12 }}>{error}</div>}
+        {loading && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.text.muted, fontSize: 12, pointerEvents: 'none', background: 'rgba(12,16,14,0.6)' }}>
+            Loading chart...
+          </div>
+        )}
+        {error && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: colors.accent.red, fontSize: 12, gap: 8 }}>
+            <span>{error}</span>
+            <button onClick={() => loadCandles(symbol, timeFrame)} style={{ background: colors.accent.red, color: colors.bg.base, border: 'none', padding: '4px 12px', borderRadius: 2, cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' }}>Retry</button>
+          </div>
+        )}
       </div>
-      <div ref={densityRef} style={{ height: 60, minHeight: 60, borderTop: '1px solid ' + bd }} />
+      <div ref={densityRef} style={{ height: 80, minHeight: 80, borderTop: '1px solid ' + bd }} />
     </div>
   );
 }

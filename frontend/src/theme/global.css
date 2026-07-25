@@ -50,8 +50,23 @@ button { cursor: pointer; font-family: inherit; }
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 8px rgba(51, 204, 102, 0.05);
 }
 
+/* ─── Panel slide-in animation ─── */
+.panel-enter {
+  animation: slideInRight 200ms ease-out forwards;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.msg-item {
+  transition: background 150ms ease, border-left-color 150ms ease;
+}
+
 .msg-item:hover {
   background: rgba(51, 204, 102, 0.06) !important;
+  border-left-color: rgba(51, 204, 102, 0.3) !important;
 }
 
 .msg-item.active {

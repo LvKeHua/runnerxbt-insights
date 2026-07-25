@@ -2,8 +2,16 @@ import { useRef, useEffect, useState } from 'react';
 import type { Message } from '../types';
 import { colors } from '../theme/colors';
 
+const spinKeyframes = `
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}`;
+
 interface Props {
   messages: Message[];
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   onSelectMessage: (msg: Message) => void;
   selectedId?: number;
   selectedDate?: string;
@@ -13,7 +21,15 @@ function isVideoPath(path: string): boolean {
   return /\.(mp4|webm|mov|avi)$/i.test(path);
 }
 
-export function Sidebar({ messages, onSelectMessage, selectedId, selectedDate }: Props) {
+// Inject spin keyframes once
+if (typeof document !== 'undefined' && !document.getElementById('sidebar-spin-keyframes')) {
+  const style = document.createElement('style');
+  style.id = 'sidebar-spin-keyframes';
+  style.textContent = spinKeyframes;
+  document.head.appendChild(style);
+}
+
+export function Sidebar({ messages, loading, error, onRetry, onSelectMessage, selectedId, selectedDate }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState('');
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -57,13 +73,27 @@ export function Sidebar({ messages, onSelectMessage, selectedId, selectedDate }:
         <input type="text" placeholder="Search messages..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', background: colors.bg.base, border: '1px solid ' + bd, borderRadius: 2, padding: '4px 8px', color: colors.text.primary, fontSize: 11, fontFamily: 'inherit', outline: 'none' }} />
       </div>
       <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
-        {Object.entries(grouped).map(([date, msgs]) => {
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '24px 12px', color: colors.text.muted, fontSize: 11 }}>
+            <span style={{ display: 'inline-block', width: 10, height: 10, border: '2px solid ' + colors.border.default, borderTopColor: colors.accent.green, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            Loading messages...
+          </div>
+        ) : error ? (
+          <div style={{ padding: '16px 12px', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: colors.accent.red, marginBottom: 8 }}>{error}</div>
+            <button onClick={onRetry} style={{ background: colors.accent.red, color: colors.bg.base, border: 'none', padding: '4px 12px', borderRadius: 2, cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' }}>Retry</button>
+          </div>
+        ) : messages.length === 0 ? (
+          <div style={{ padding: '24px 12px', textAlign: 'center', color: colors.text.muted, fontSize: 11 }}>No messages</div>
+        ) : (
+        Object.entries(grouped).map(([date, msgs]) => {
           const isDateActive = selectedDate === date;
           return (
             <div key={date}>
               <div style={{
                 padding: '10px 12px 4px 28px',
                 fontSize: 10,
+                fontWeight: 600,
                 color: isDateActive ? colors.accent.green : colors.text.secondary,
                 textTransform: 'uppercase',
                 letterSpacing: '0.3px',
@@ -133,7 +163,7 @@ export function Sidebar({ messages, onSelectMessage, selectedId, selectedDate }:
                         </span>
                         <span
                           onClick={(e) => { e.stopPropagation(); onSelectMessage(m); }}
-                          style={{ fontSize: 9, color: colors.accent.green, marginLeft: 8, cursor: 'pointer', textDecoration: 'underline dotted' }}
+                          style={{ fontSize: 10, color: colors.accent.green, marginLeft: 8, cursor: 'pointer', textDecoration: 'underline dotted', padding: '2px 4px' }}
                         >
                           在日面板查看
                         </span>
@@ -144,7 +174,8 @@ export function Sidebar({ messages, onSelectMessage, selectedId, selectedDate }:
               })}
             </div>
           );
-        })}
+        })
+      )}
       </div>
     </div>
   );
