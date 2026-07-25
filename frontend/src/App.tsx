@@ -58,7 +58,7 @@ export default function App() {
         <button
           onClick={async () => {
             try {
-              await fetch('/runnerxbt/api/refresh');
+              await fetch('/api/refresh');
             } catch { /* skip if backend refresh unavailable */ }
             refresh();
           }}

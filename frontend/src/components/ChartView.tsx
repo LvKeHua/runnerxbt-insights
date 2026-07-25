@@ -11,8 +11,8 @@ interface Props {
 }
 
 const API_MAP: Record<SymbolType, Record<TimeFrame, string>> = {
-  btc: { '1d': '/runnerxbt/api/btc', '4h': '/runnerxbt/api/btc4h' },
-  eth: { '1d': '/runnerxbt/api/eth', '4h': '/runnerxbt/api/eth' },
+  btc: { '1d': '/api/btc', '4h': '/api/btc4h' },
+  eth: { '1d': '/api/eth', '4h': '/api/eth' },
 };
 const SYMBOL_LABEL: Record<SymbolType, string> = { btc: 'BTC/USDT', eth: 'ETH/USDT' };
 const TF_LABEL: Record<TimeFrame, string> = { '1d': '1D', '4h': '4H' };
