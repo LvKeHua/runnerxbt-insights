@@ -10,10 +10,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ─── Config ───
 const CF_API = 'https://api.cloudflare.com/client/v4';
-const ACCOUNT_ID = '1ab09277ed038add4925d28a343c9dc5';
-const API_TOKEN = 'd7ca80c814708d4015dd782b3e327789:wx1sLSdRcMdddK5d:9uuLTQtM07QjVpuGlXe66nmCOLxnVxtP';
-const KV_NAMESPACE_ID = 'a8a7863f33ce49cc94d764f784c2cbe6';
+const ACCOUNT_ID = process.env.CF_ACCOUNT_ID;
+const API_TOKEN = process.env.CF_API_TOKEN;
+const KV_NAMESPACE_ID = process.env.CF_KV_NAMESPACE_ID;
 const WORKER_NAME = 'runnerxbt';
+
+if (!ACCOUNT_ID || !API_TOKEN || !KV_NAMESPACE_ID) {
+  console.error('ERROR: Missing required environment variables:');
+  console.error('  CF_ACCOUNT_ID - Cloudflare Account ID');
+  console.error('  CF_API_TOKEN  - Cloudflare API Token');
+  console.error('  CF_KV_NAMESPACE_ID - Cloudflare KV Namespace ID');
+  console.error('\nCreate a .env file or set these variables before running deploy.');
+  process.exit(1);
+}
 
 const PROJECT_ROOT = resolve(__dirname, '..');
 

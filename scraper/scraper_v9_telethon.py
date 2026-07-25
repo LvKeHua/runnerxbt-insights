@@ -3,7 +3,7 @@ Scraper v9 — Use Telethon (MTProto API) to download all messages + media from 
 
 Telegram Web uses public credentials:
   api_id = 2496
-  api_hash = "8da85b0d0675be02224ac1a1e0c5cef0"
+  api_hash = os.getenv("TELEGRAM_API_HASH", "")
   
 These are embedded in web.telegram.org's source code and are the standard public creds.
 """
@@ -22,8 +22,8 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 RUNNER_TG_DIR = os.path.join(BASE_DIR, "runner tg")
 SESSION_FILE = os.path.join(BASE_DIR, "scraper", "_telethon_session")
 
-API_ID = 2496
-API_HASH = "8da85b0d0675be02224ac1a1e0c5cef0"
+API_ID = int(os.getenv("TELEGRAM_API_ID", "0"))
+API_HASH = os.getenv("TELEGRAM_API_HASH", "")
 CHANNEL = "@RunnerXBT_Insights"
 
 os.makedirs(MEDIA_DIR, exist_ok=True)

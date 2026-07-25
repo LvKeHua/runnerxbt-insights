@@ -41,8 +41,8 @@ async def main():
     from telethon import TelegramClient
     from telethon.sessions import TDesktopSession
     
-    api_id = 2496
-    api_hash = '8da85b0d0675be02224ac1a1e0c5cef0'
+    api_id = int(os.getenv("TELEGRAM_API_ID", "0"))
+    api_hash = os.getenv("TELEGRAM_API_HASH", "")
     session_path = os.path.join(BASE_DIR, 'scraper', '_td_session')
     
     # Try to create a client using TDesktop's tdata

@@ -5,7 +5,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 async def main():
     from telethon import TelegramClient, errors
     
-    client = TelegramClient('test_session3', 32862414, 'ef44e2d6868e8614646abb59c58aaa05')
+    client = TelegramClient('test_session3', int(os.getenv("TELEGRAM_API_ID", "0")), os.getenv("TELEGRAM_API_HASH", ""))
     await client.connect()
     print('connected, requesting QR...')
     

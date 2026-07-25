@@ -15,8 +15,8 @@ CLASSIFICATION_RULES = {
     "blue": {"keywords": [], "regex": []},
 }
 
-TELEGRAM_API_ID = int(os.getenv("TELEGRAM_API_ID", "32862414"))
-TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH", "ef44e2d6868e8614646abb59c58aaa05")
+TELEGRAM_API_ID = int(os.getenv("TELEGRAM_API_ID", "0"))
+TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH", "")
 TELEGRAM_SESSION = os.getenv("TELEGRAM_SESSION", str(BASE_DIR / "scraper" / "tg_session"))
 
 WS_PING_INTERVAL = int(os.getenv("WS_PING_INTERVAL", "30"))
