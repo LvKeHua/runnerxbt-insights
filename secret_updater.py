@@ -22,7 +22,11 @@ def api_put(url, data, token):
         'Content-Type': 'application/json',
     })
     resp = urllib.request.urlopen(req)
-    return json.loads(resp.read())
+    raw = resp.read()
+    # PUT 成功返回 204 No Content
+    if not raw:
+        return {'success': True}
+    return json.loads(raw)
 
 def main():
     if len(sys.argv) < 5:
