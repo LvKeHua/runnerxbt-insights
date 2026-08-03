@@ -24,7 +24,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install telethon requests
+        run: pip install telethon requests pynacl
 
       - name: Restore Telegram session
         env:
@@ -86,11 +86,14 @@ jobs:
           KEY=$(echo "$ENC" | python -c "import json,sys; print(json.load(sys.stdin).get('key',''))")
           echo "$NEW_REFRESH" > /tmp/secret_value.txt
           echo "$KEY" > /tmp/key.txt
-          pip install pynacl
           ENC_VALUE=$(python -c "import base64; from nacl import encoding, public; k=public.PublicKey(base64.b64decode(open('/tmp/key.txt').read())); s=public.SealedBox(k).encrypt(open('/tmp/secret_value.txt','rb').read()); print(base64.b64encode(s).decode())")
-          curl -s -X PUT -H "Authorization: token ${GH_TOKEN}" \
-            "https://api.github.com/repos/LvKeHua/runnerxbt-insights/actions/secrets/CF_REFRESH_TOKEN" \
-            -d "{\"encrypted_value\":\"${ENC_VALUE}\",\"key_id\":\"${KEY_ID}\"}"
+          if [ -z "$ENC_VALUE" ]; then
+            echo "::warning::Encryption failed, keeping existing secret"
+          else
+            curl -s -X PUT -H "Authorization: token ${GH_TOKEN}" \
+              "https://api.github.com/repos/LvKeHua/runnerxbt-insights/actions/secrets/CF_REFRESH_TOKEN" \
+              -d "{\"encrypted_value\":\"${ENC_VALUE}\",\"key_id\":\"${KEY_ID}\"}"
+          fi
 
       - name: Push back synced data
         env:
