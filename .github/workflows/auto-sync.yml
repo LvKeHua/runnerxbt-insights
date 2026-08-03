@@ -83,20 +83,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           NEW_REFRESH: ${{ steps.cfauth.outputs.new_refresh }}
         run: |
-          ENC=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
-            "https://api.github.com/repos/LvKeHua/runnerxbt-insights/actions/secrets/public-key")
-          KEY_ID=$(echo "$ENC" | python -c "import json,sys; print(json.load(sys.stdin).get('key_id',''))")
-          KEY=$(echo "$ENC" | python -c "import json,sys; print(json.load(sys.stdin).get('key',''))")
-          echo "$NEW_REFRESH" > /tmp/secret_value.txt
-          echo "$KEY" > /tmp/key.txt
-          ENC_VALUE=$(python -c "import base64; from nacl import encoding, public; k=public.PublicKey(base64.b64decode(open('/tmp/key.txt').read())); s=public.SealedBox(k).encrypt(open('/tmp/secret_value.txt','rb').read()); print(base64.b64encode(s).decode())")
-          if [ -z "$ENC_VALUE" ]; then
-            echo "::warning::Encryption failed, keeping existing secret"
-          else
-            curl -s -X PUT -H "Authorization: token ${GH_TOKEN}" \
-              "https://api.github.com/repos/LvKeHua/runnerxbt-insights/actions/secrets/CF_REFRESH_TOKEN" \
-              -d "{\"encrypted_value\":\"${ENC_VALUE}\",\"key_id\":\"${KEY_ID}\"}"
-          fi
+          python -u secret_updater.py LvKeHua/runnerxbt-insights CF_REFRESH_TOKEN "$NEW_REFRESH" "$GH_TOKEN"
 
       - name: Push back synced data
         run: |
