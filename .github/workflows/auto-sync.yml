@@ -103,5 +103,5 @@ jobs:
             echo "No data changes"
           else
             git commit -m "sync: update data $(date -u +%Y-%m-%dT%H:%M)"
-            git push origin HEAD:master
+            git push "https://x-access-token:${GH_TOKEN}@github.com/LvKeHua/runnerxbt-insights.git" HEAD:master
           fi
