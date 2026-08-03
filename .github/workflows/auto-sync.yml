@@ -5,6 +5,9 @@ on:
     - cron: '5 * * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 concurrency:
   group: runnerxbt-sync
   cancel-in-progress: false
@@ -96,8 +99,6 @@ jobs:
           fi
 
       - name: Push back synced data
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           git config user.name "RunnerXBT Sync"
           git config user.email "sync@runnerxbt.local"
@@ -106,5 +107,5 @@ jobs:
             echo "No data changes"
           else
             git commit -m "sync: update data $(date -u +%Y-%m-%dT%H:%M)"
-            git push "https://x-access-token:${GH_TOKEN}@github.com/LvKeHua/runnerxbt-insights.git" HEAD:master
+            git push origin HEAD:master
           fi
