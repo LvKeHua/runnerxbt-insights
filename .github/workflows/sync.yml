@@ -1,6 +1,6 @@
 name: RunnerXBT Auto Sync
 
-on:
+"on":
   schedule:
     # 每小时运行一次 (UTC 5分)
     - cron: '5 * * * *'
