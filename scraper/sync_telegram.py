@@ -8,7 +8,7 @@ import asyncio, os, sys, json
 from pathlib import Path
 sys.stdout.reconfigure(encoding='utf-8')
 
-BASE_DIR = Path(r'D:\Vibe Coding 项目合集\runnerxbt')
+BASE_DIR = Path(__file__).parent.parent
 SESSION_PATH = str(BASE_DIR / 'scraper' / 'tg_session')
 MEDIA_DIR = BASE_DIR / 'data' / 'media'
 OUT_FILE = BASE_DIR / 'data' / 'messages_telethon.json'
