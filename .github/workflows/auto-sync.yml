@@ -55,35 +55,10 @@ jobs:
           python -u inject_ux3.py 2>&1 | tail -3
           python -u inject_ux4.py 2>&1 | tail -3
 
-      - name: Refresh Cloudflare OAuth token
-        id: cfauth
-        env:
-          CF_REFRESH_TOKEN: ${{ secrets.CF_REFRESH_TOKEN }}
-          CF_CLIENT_ID: ${{ secrets.CF_CLIENT_ID }}
-        run: |
-          RESP=$(curl -s -X POST "https://dash.cloudflare.com/oauth2/token" \
-            -d "grant_type=refresh_token&refresh_token=${CF_REFRESH_TOKEN}&client_id=${CF_CLIENT_ID}")
-          ACCESS_TOKEN=$(echo "$RESP" | python -c "import json,sys; print(json.load(sys.stdin).get('access_token',''))")
-          NEW_REFRESH=$(echo "$RESP" | python -c "import json,sys; print(json.load(sys.stdin).get('refresh_token',''))")
-          echo "access_token=${ACCESS_TOKEN}" >> "$GITHUB_OUTPUT"
-          echo "new_refresh=${NEW_REFRESH}" >> "$GITHUB_OUTPUT"
-          if [ -z "$ACCESS_TOKEN" ]; then
-            echo "::error::CF OAuth refresh failed"
-            exit 1
-          fi
-
       - name: Deploy to Cloudflare Pages
         env:
-          CLOUDFLARE_API_TOKEN: ${{ steps.cfauth.outputs.access_token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: npx --yes wrangler@4 pages deploy deploy_v2 --project-name runnerxbt --branch main --commit-dirty=true 2>&1 | tail -6
-
-      - name: Update refresh token secret
-        if: steps.cfauth.outputs.new_refresh != ''
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          NEW_REFRESH: ${{ steps.cfauth.outputs.new_refresh }}
-        run: |
-          python -u secret_updater.py LvKeHua/runnerxbt-insights CF_REFRESH_TOKEN "$NEW_REFRESH" "$GH_TOKEN"
 
       - name: Push back synced data
         run: |
