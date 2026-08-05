@@ -2,7 +2,7 @@
 Incremental Telegram scraper for @RunnerXBT_Insights.
 Fetches only NEW messages since the last sync, downloads new media,
 merges into messages_telethon.json (source of truth for merged build).
-Uses local SOCKS5 proxy (127.0.0.1:7897) for Telegram connectivity.
+VPS 版: 日本VPS直连 Telegram，无需代理（环境变量 RUNNER_PROXY 可选覆盖）
 """
 import asyncio, os, sys, json
 from pathlib import Path
@@ -16,7 +16,14 @@ LOG_FILE = BASE_DIR / 'sync.log'
 
 API_ID = 32862414
 API_HASH = 'ef44e2d6868e8614646abb59c58aaa05'
-PROXY = ('socks5', '127.0.0.1', 7897)
+# VPS 直连无需代理；如需代理设 RUNNER_PROXY='socks5://127.0.0.1:7897'
+PROXY = None
+_px = os.environ.get('RUNNER_PROXY', '')
+if _px:
+    # 支持 socks5://host:port 或 http://host:port 格式
+    scheme, _, rest = _px.partition('://')
+    host, _, port = rest.rpartition(':')
+    PROXY = (scheme, host, int(port))
 CHANNEL = '@RunnerXBT_Insights'
 
 def log(msg):
@@ -41,7 +48,8 @@ async def main():
     max_id = max(existing.keys()) if existing else 0
     log(f'Existing messages: {len(existing)}, last id: {max_id}')
 
-    client = TelegramClient(SESSION_PATH, API_ID, API_HASH, proxy=PROXY)
+    # VPS直连无代理：proxy=None 时直接连；有代理才传
+    client = TelegramClient(SESSION_PATH, API_ID, API_HASH, proxy=PROXY) if PROXY else TelegramClient(SESSION_PATH, API_ID, API_HASH)
     await client.connect()
 
     if not await client.is_user_authorized():
