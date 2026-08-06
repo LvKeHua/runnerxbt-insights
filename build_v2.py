@@ -72,8 +72,16 @@ def clean_text(text):
 def normalize_msg(m):
     raw_date = m.get('date', '')
     if 'T' in raw_date:
-        date_part = raw_date[:10]
-        time_part = raw_date[11:16]
+        # ISO datetime (UTC) -> Beijing time (UTC+8)
+        from datetime import datetime, timedelta
+        try:
+            dt = datetime.fromisoformat(raw_date.replace('Z', '+00:00'))
+            dt_bj = dt + timedelta(hours=8)
+            date_part = dt_bj.strftime('%Y-%m-%d')
+            time_part = dt_bj.strftime('%H:%M')
+        except ValueError:
+            date_part = raw_date[:10]
+            time_part = raw_date[11:16]
     else:
         date_part = raw_date
         time_part = m.get('timestamp', '')
