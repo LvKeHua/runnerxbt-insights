@@ -69,10 +69,13 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy slinglab-homepage worker (runnerxbt proxy)
         env:
           CLOUDFLARE_API_TOKEN: ${{ steps.cfauth.outputs.access_token }}
-        run: npx --yes wrangler@4 pages deploy deploy_v2 --project-name runnerxbt --branch main --commit-dirty=true 2>&1 | tail -6
+        run: |
+          git clone --depth 1 https://github.com/LvKeHua/slinglab-website.git /tmp/slinglab
+          cd /tmp/slinglab/00_平台/homepage-worker
+          npx --yes wrangler@4 deploy 2>&1 | tail -6
 
       - name: Update refresh token secret
         if: steps.cfauth.outputs.new_refresh != ''
