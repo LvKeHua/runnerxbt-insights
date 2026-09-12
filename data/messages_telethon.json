@@ -25567,5 +25567,18 @@
     "date": "2026-09-12T05:55:22+00:00",
     "text": "ETH ETF flows Friday (yesterday): +216.4m, Tom Lee's numbers we will know on Monday \n\nbut thats a fuck-ton for 1 day 🫡 happy weekend",
     "has_media": false
+  },
+  {
+    "id": 4115,
+    "date": "2026-09-12T06:30:26+00:00",
+    "text": "Lol",
+    "has_media": false
+  },
+  {
+    "id": 4116,
+    "date": "2026-09-12T06:30:26+00:00",
+    "text": "Community alert: Revolut appears to have exposed personally identifiable information (PII) for a subset of users due to failing to detect a fraudulent government request.\n\nExposed data included:\n-Copy of passport and/or driver's licence, plus the verification selfie\n-Account statements, IBAN, withdrawal records, and full transaction history including Bitcoin\n-Full name, date of birth, occupation\n-Home address, email, phone number\n\nWhile the incident is likely limited in size it seems to have been targeted at high net worth users. \n\nAn [email](https://x.com/magicaltux/status/2098613398070305037) alerting users was sent out to multiple Revolut users yesterday.",
+    "has_media": true,
+    "media_path": "/media/msg_4116.jpg"
   }
 ]
