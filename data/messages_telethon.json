@@ -25580,5 +25580,12 @@
     "text": "Community alert: Revolut appears to have exposed personally identifiable information (PII) for a subset of users due to failing to detect a fraudulent government request.\n\nExposed data included:\n-Copy of passport and/or driver's licence, plus the verification selfie\n-Account statements, IBAN, withdrawal records, and full transaction history including Bitcoin\n-Full name, date of birth, occupation\n-Home address, email, phone number\n\nWhile the incident is likely limited in size it seems to have been targeted at high net worth users. \n\nAn [email](https://x.com/magicaltux/status/2098613398070305037) alerting users was sent out to multiple Revolut users yesterday.",
     "has_media": true,
     "media_path": "/media/msg_4116.jpg"
+  },
+  {
+    "id": 4117,
+    "date": "2026-09-12T13:42:12+00:00",
+    "text": "Absolutely hilarious. State of the crypto market.\n\nhttps://x.com/RunnerXBT/status/2098768584902103183?s=20",
+    "has_media": true,
+    "media_path": "/media/msg_4117.jpg"
   }
 ]
